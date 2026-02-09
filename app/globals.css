@@ -1,0 +1,156 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #000000;
+  color: #1659BD;
+  font-family: Poppins, sans-serif !important;
+}
+
+* {
+  color: #1659BD;
+  font-family: Poppins, sans-serif !important;
+}
+
+/* Force Poppins font on all elements */
+div, span, p, h1, h2, h3, h4, h5, h6, a, button, input, textarea, label {
+  font-family: Poppins, sans-serif !important;
+}
+
+/* Custom space-y for mobile with 2px spacing */
+.space-y-mobile-2px > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.125rem * calc(1 - var(--tw-space-y-reverse)));
+  margin-bottom: calc(0.125rem * var(--tw-space-y-reverse));
+}
+
+/* Custom scrollbar styling for conversation container */
+.conversation-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #1659BD #f1f1f1;
+}
+
+.conversation-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.conversation-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.conversation-scrollbar::-webkit-scrollbar-thumb {
+  background: #1659BD;
+  border-radius: 3px;
+}
+
+.conversation-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #0f4a9e;
+}
+
+/* Popup full screen overlay */
+/* ChatInterface specific styles */
+.chat-interface-container div[style*="background: linear-gradient(91deg, #334FC5"] {
+  text-align: left !important;
+  color: black !important;
+  background: none !important;
+  background-clip: initial !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+.chat-interface-container div[style*="color: #1659BD; text-align: center"] {
+  text-align: left !important;
+  color: #000000 !important;
+}
+
+/* Hide gradient title text completely in Chat Interface */
+.chat-interface-container div[style*="text-align: center; font-size: 24px; font-style: normal; font-weight: 600; line-height: 28px; letter-spacing: -0.96px; background: linear-gradient(91deg, #334FC5 0.27%, #5697FF 64.58%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;"] {
+  display: none !important;
+}
+.focus-main-box .typ-focus {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+.focus-main-box .typ-focus .grid .bg-white{
+  background: transparent;
+  padding: 0.35rem 0.75rem;
+}
+.focus-main-box .typ-focus .bg-green-50{
+  background: #ffffff;
+}
+.focus-main-box .typ-focus .bg-whiteclr{
+  gap: 0.125rem;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.20);
+  border-radius: 0 0 12px 12px;
+  padding: 0 0 12px 0;
+}
+.focus-main-box .focus-header{
+  text-align: center;
+  flex-direction: column;
+}
+.focus-main-box .focus-header .text-gray-900{
+  text-align: center;
+
+/* Heading/H2/H2 Semi Bold */
+font-size: var(--Typography-Font-Size-H2, 24px);
+font-weight: 600;
+line-height: var(--Typography-Line-Height-H2, 32px); /* 133.333% */
+background: var(--Eva-Header-Text, linear-gradient(90deg, var(--Hdfc-Primary-700, #0E2391) 0.09%, var(--Hdfc-Primary-400, #4F6FDF) 58.12%));
+background-clip: text;
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+.focus-main-box .focus-act-btn{
+  display: none;
+}
+.focus-main-box .table-title-wrapper{
+  text-align: center;
+  flex-direction: column;
+  display: flex;
+}
+.focus-main-box .table-title-wrapper h3{
+  color: #1A5CC0;
+text-align: center;
+font-feature-settings: 'ss01' on;
+font-family: Poppins;
+font-size: 16px;
+font-style: normal;
+font-weight: 600;
+line-height: 20px; /* 125% */
+letter-spacing: -0.64px;
+}
+.focus-main-box .typ-focus .grid.add-white-bg .bg-white{
+  background: #ffffff;
+  border-radius: 12px;
+}
+.focus-main-box .typ-focus .grid.add-white-bg .bg-white:first-child{
+  margin: 12px 0;
+}
+
+.focus-main-box .typ-focus .center-text-box{
+  text-align: center;
+}
+.focus-main-box .typ-focus .center-text-box .typ2{
+  justify-content: center;
+}
+.focus-main-box .typ-focus .center-text-box .text-black{
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.popup-full {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 10;
+  background: #D6DFFF;
+}
