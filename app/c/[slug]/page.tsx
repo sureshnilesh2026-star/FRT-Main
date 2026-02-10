@@ -2,11 +2,36 @@
 
 import TextAnimation from '@/components/TextAnimation'
 import { useConversation } from '@elevenlabs/react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState, useRef } from 'react'
 
 export default function ConversationPage() {
   const { slug } = useParams()
+  const searchParams = useSearchParams()
+
+  // Read query params from FRT redirect, save to localStorage
+  const [frtVariables, setFrtVariables] = useState<{ name: string; status: string; confidence: string }>({ name: '', status: '', confidence: '' })
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    // Read from query params first, fallback to localStorage
+    const qName = searchParams.get('name')
+    const qStatus = searchParams.get('status')
+    const qConfidence = searchParams.get('confidence')
+
+    const name = qName || localStorage.getItem('name') || ''
+    const status = qStatus || localStorage.getItem('status') || ''
+    const confidence = qConfidence || localStorage.getItem('confidence') || ''
+
+    // Save to localStorage for persistence across refreshes
+    if (name) localStorage.setItem('name', name)
+    if (status) localStorage.setItem('status', status)
+    if (confidence) localStorage.setItem('confidence', confidence)
+
+    setFrtVariables({ name, status, confidence })
+  }, [searchParams])
+
   const [currentText, setCurrentText] = useState('')
   const [messages, setMessages] = useState<any[]>([])
   const [itemIdCounter, setItemIdCounter] = useState(1)
@@ -24,44 +49,58 @@ export default function ConversationPage() {
     fetch(`/api/c?id=${slug}`)
       .then((res) => res.json())
       .then((res) => {
-        if (res.length > 0 && isMountedRef.current) {
-          setMessages(
-            res.map((i: any) => ({
-              ...i,
-              formatted: {
-                text: i.content_transcript,
-                transcript: i.content_transcript,
-              },
-            })),
-          )
+        if (isMountedRef.current) {
+          if (res.length > 0) {
+            setMessages(
+              res.map((i: any) => ({
+                ...i,
+                formatted: {
+                  text: i.content_transcript,
+                  transcript: i.content_transcript,
+                },
+              })),
+            )
+          }
         }
       })
-      .catch(console.error)
+      .catch(() => {})
   }, [slug])
 
   // ElevenLabs conversation hook
   const conversation = useConversation({
     onError: (error: string) => { 
-      console.error('ElevenLabs Error:', error)
-      console.error('Error details:', JSON.stringify(error))
-      if (isMountedRef.current) {
-        setIsConnecting(false)
+      // Check if it's a WebSocket state error
+      if (typeof error === 'string' && error.includes('CLOSING') || error.includes('CLOSED')) {
+        // Don't set error message for WebSocket state errors as they might be transient
+      } else {
+        if (isMountedRef.current) {
+          setIsConnecting(false)
+          setErrorMessage(`Connection error: ${error}`)
+        }
       }
     },
     onConnect: () => { 
-      console.log('ElevenLabs Connected! Status will change to connected.')
       if (isMountedRef.current) {
-        setIsConnecting(false)
+        // Small delay to ensure WebSocket is fully ready
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            setIsConnecting(false)
+          }
+        }, 200)
       }
     },
     onDisconnect: () => {
-      console.log('ElevenLabs Disconnected')
       if (isMountedRef.current) {
         setIsConnecting(false)
       }
     },
     onMessage: async (props: { message: string; source: 'user' | 'ai' }) => {
       if (!isMountedRef.current) return
+      
+      // Check connection status before processing message
+      if (conversation.status !== 'connected') {
+        return
+      }
       
       const { message, source } = props
       let finalMessage = message
@@ -129,28 +168,36 @@ export default function ConversationPage() {
           setItemIdCounter(prev => prev + 1)
           loadConversation()
         }
-      }).catch(console.error)
+      }).catch(() => {})
     },
   })
 
   // Connect to ElevenLabs
   const connectConversation = useCallback(async () => {
-    if (!isMountedRef.current || isConnecting) return
+    if (!isMountedRef.current) return
+    if (isConnecting) return
     if (conversation.status === 'connected') return
     
+    // If there's an existing session, clean it up first
+    if (conversation.status !== 'idle' && conversation.status !== 'disconnected') {
+      try {
+        await conversation.endSession()
+        // Wait a bit for cleanup
+        await new Promise(resolve => setTimeout(resolve, 300))
+      } catch (err) {
+        // Cleanup error ignored
+      }
+    }
+    
     setIsConnecting(true)
-    console.log('Starting ElevenLabs connection...')
     
     try {
       // Request microphone permission
       if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
-        console.log('Requesting microphone permission...')
         await navigator.mediaDevices.getUserMedia({ audio: true })
-        console.log('Microphone permission granted')
       }
       
       // Get signed URL
-      console.log('Fetching signed URL...')
       const response = await fetch('/api/i', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,7 +205,6 @@ export default function ConversationPage() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to connect to ElevenLabs API' }))
         const errorMsg = errorData.error || `HTTP ${response.status}: ${response.statusText}`
-        console.error('API Error:', errorMsg)
         if (isMountedRef.current) {
           setIsConnecting(false)
           setErrorMessage(`Unable to connect to ElevenLabs: ${errorMsg}. Please check your network connection and API configuration.`)
@@ -169,7 +215,6 @@ export default function ConversationPage() {
       const data = await response.json()
       
       if (data.error) {
-        console.error('API Error:', data.error)
         if (isMountedRef.current) {
           setIsConnecting(false)
           setErrorMessage(`ElevenLabs API Error: ${data.error}`)
@@ -182,19 +227,40 @@ export default function ConversationPage() {
         setErrorMessage(null)
       }
       
-      console.log('Got signed URL, starting session...')
+      // Read FRT variables from localStorage for ElevenLabs conversation
+      const elName = localStorage.getItem('name') || ''
+      const elStatus = localStorage.getItem('status') || ''
+      const elConfidence = localStorage.getItem('confidence') || ''
       
-      // Start session with signed URL - must specify websocket connection type
-      const sessionId = await conversation.startSession({ 
+      // Ensure variables are ready before starting conversation
+      if (!elName || !elStatus || !elConfidence) {
+        if (isMountedRef.current) {
+          setIsConnecting(false)
+          setErrorMessage('Face recognition variables not received. Please go back and capture your photo first.')
+        }
+        return
+      }
+      
+      // Start session with signed URL and FRT variables
+      await conversation.startSession({ 
         signedUrl: data.apiKey,
-        connectionType: 'websocket'
+        connectionType: 'websocket',
+        dynamicVariables: {
+          name: elName,
+          status: elStatus,
+          confidence: elConfidence
+        }
       })
       
-      console.log('Session started! ID:', sessionId)
+      // Wait a bit for WebSocket to fully establish before marking as connected
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Verify connection is still active
+      if (isMountedRef.current) {
+        setIsConnecting(false)
+      }
       
     } catch (error: any) {
-      console.error('Connection error:', error)
-      console.error('Error stack:', error?.stack)
       if (isMountedRef.current) {
         setIsConnecting(false)
         setErrorMessage(`Connection failed: ${error.message || 'Unknown error'}. Please check your network connection and try again.`)
@@ -204,14 +270,15 @@ export default function ConversationPage() {
 
   // Disconnect from ElevenLabs
   const disconnectConversation = useCallback(async () => {
-    if (conversation.status === 'connected') {
+    if (conversation.status === 'connected' || conversation.status === 'connecting') {
       try {
         await conversation.endSession()
-      } catch (error) {
-        // Ignore disconnect errors
+      } catch (error: any) {
+        // Disconnect error ignored (WebSocket might already be closed)
       }
     }
     if (isMountedRef.current) {
+      setIsConnecting(false)
       setShowPaymentSummary(false)
       setPaymentSummaryData([])
     }
@@ -220,7 +287,7 @@ export default function ConversationPage() {
   // Handle start listening
   const handleStartListening = useCallback(async () => {
     if (conversation.status !== 'connected' && !isConnecting) {
-      // Send webhook
+      // Send webhook FIRST
       fetch('/api/webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -230,7 +297,7 @@ export default function ConversationPage() {
           timestamp: new Date().toISOString(),
           status: 'connecting'
         }),
-      }).catch(console.error)
+      }).catch(() => {})
       
       await connectConversation()
     }
@@ -266,10 +333,6 @@ export default function ConversationPage() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to connect to webhook service' }))
-        const errorMsg = errorData.error || errorData.details || `HTTP ${response.status}: ${response.statusText}`
-        console.error('Webhook API Error:', errorMsg)
-        // Don't set error message for webhook failures as they're not critical
         return processLocalFallback(message)
       }
 
@@ -333,7 +396,6 @@ export default function ConversationPage() {
       return processLocalFallback(message)
       
     } catch (error) {
-      console.error('N8N webhook error:', error)
       return processLocalFallback(message)
     }
   }
@@ -415,18 +477,26 @@ export default function ConversationPage() {
       
       return loanDataArray.length > 0 ? loanDataArray : null
     } catch (error) {
-      console.error('Error extracting loan data:', error)
       return null
     }
   }
 
-  // Mount effect
+  // Mount effect - load conversation data
+  useEffect(() => {
+    loadConversation()
+  }, [loadConversation])
+  
+  // Mount/unmount effect - setup and cleanup
   useEffect(() => {
     isMountedRef.current = true
     setIsMounted(true)
     
     return () => {
       isMountedRef.current = false
+      // Cleanup: disconnect on unmount
+      if (conversation.status === 'connected') {
+        conversation.endSession().catch(() => {})
+      }
     }
   }, [])
 
