@@ -31,7 +31,7 @@ export default function ConversationPage() {
 
     setFrtVariables({ name, status, confidence })
   }, [searchParams])
-
+  
   const [currentText, setCurrentText] = useState('')
   const [messages, setMessages] = useState<any[]>([])
   const [itemIdCounter, setItemIdCounter] = useState(1)
@@ -246,9 +246,9 @@ export default function ConversationPage() {
         signedUrl: data.apiKey,
         connectionType: 'websocket',
         dynamicVariables: {
-          name: elName,
-          status: elStatus,
-          confidence: elConfidence
+              name: elName,
+              status: elStatus,
+              confidence: elConfidence
         }
       })
       
@@ -506,19 +506,19 @@ export default function ConversationPage() {
   }
 
   return (
-    <TextAnimation 
-      currentText={currentText} 
-      isAudioPlaying={conversation.isSpeaking} 
-      onStopListening={handleStopListening} 
-      onStartListening={handleStartListening}
-      setCurrentText={setCurrentText}
-      showPaymentSummary={showPaymentSummary}
-      paymentSummaryData={paymentSummaryData}
-      showChatInterface={showChatInterface}
-      setShowChatInterface={setShowChatInterface}
-      conversationHistory={messages}
-      errorMessage={errorMessage}
-      onDismissError={() => setErrorMessage(null)}
-    />
+      <TextAnimation 
+        currentText={currentText} 
+        isAudioPlaying={conversation.isSpeaking} 
+        onStopListening={handleStopListening} 
+        onStartListening={handleStartListening}
+        setCurrentText={setCurrentText}
+        showPaymentSummary={showPaymentSummary}
+        paymentSummaryData={paymentSummaryData}
+        showChatInterface={showChatInterface}
+        setShowChatInterface={setShowChatInterface}
+        conversationHistory={messages}
+        errorMessage={errorMessage}
+        onDismissError={() => setErrorMessage(null)}
+      />
   )
 }
