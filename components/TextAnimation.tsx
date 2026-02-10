@@ -4,7 +4,7 @@ import { useTypingEffect } from '@/components/useTypingEffect'
 import { convertSpelledNumbersToDigits } from '@/utils/numberConverter'
 import PaymentSummaryResponsive from '@/components/PaymentSummaryResponsive'
 import ChatInterface from '@/components/ChatInterface'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 type AIState = 'idle' | 'listening' | 'speaking'
 
@@ -93,12 +93,13 @@ export default function AiTalkingAnimation({ onStartListening, onStopListening, 
     }
   }, [currentText, showPaymentSummary])
 
-  // Debug PaymentSummaryResponsive component rendering
+  // Auto-scroll transcript to bottom when new messages arrive
+  const transcriptRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (showPaymentSummary && paymentSummaryData && paymentSummaryData.length > 0) {
-      // Component is rendering with data
+    if (transcriptRef.current) {
+      transcriptRef.current.scrollTop = transcriptRef.current.scrollHeight
     }
-  }, [showPaymentSummary, paymentSummaryData])
+  }, [conversationHistory])
 
   // Add effect to handle auto-stop after "Have a wonderful day!"
   useEffect(() => {
@@ -250,9 +251,63 @@ export default function AiTalkingAnimation({ onStartListening, onStopListening, 
             </>
           )}
           
-          {/* Animated Eva's voice text - positioned based on phase */}
+          {/* Transcript + Animated Eva's voice text - positioned based on phase */}
           {!showChatInterface && (
-            <div className={`flex flex-col items-center w-4/5 mx-auto text-center ${welcomePhase === 'hidden' && aiState !== 'idle' ? 'justify-center' : ''}`} style={welcomePhase === 'hidden' && aiState !== 'idle' ? { position: 'relative', width: '90%', top: '13%', padding: '20px 0' } : {}}>
+            <div className={`flex flex-col items-center w-4/5 mx-auto text-center ${welcomePhase === 'hidden' && aiState !== 'idle' ? 'justify-center' : ''}`} style={welcomePhase === 'hidden' && aiState !== 'idle' ? { position: 'relative', width: '90%', top: '0', padding: '10px 0', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' } : {}}>
+
+            {/* Live Transcription Panel */}
+            {conversationHistory && conversationHistory.length > 0 && welcomePhase === 'hidden' && (
+              <div 
+                ref={transcriptRef}
+                className="w-full mb-3 conversation-scrollbar"
+                style={{
+                  maxHeight: '35vh',
+                  overflowY: 'auto',
+                  padding: '8px 4px',
+                }}
+              >
+                {conversationHistory
+                  .sort((a: any, b: any) => new Date(a.timestamp || 0).getTime() - new Date(b.timestamp || 0).getTime())
+                  .slice(-10) // Show last 10 messages
+                  .map((msg: any, idx: number) => {
+                    const isUser = msg.source === 'user'
+                    const text = msg.content_transcript || msg.text || ''
+                    if (!text || text === 'PAYMENT_SUMMARY_COMPONENT') return null
+                    return (
+                      <div
+                        key={msg.id || idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: isUser ? 'flex-end' : 'flex-start',
+                          marginBottom: '6px',
+                        }}
+                      >
+                        <div
+                          style={{
+                            maxWidth: '85%',
+                            padding: '8px 12px',
+                            borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                            backgroundColor: isUser ? 'rgba(22, 89, 189, 0.15)' : 'rgba(255,255,255,0.65)',
+                            backdropFilter: 'blur(4px)',
+                            textAlign: 'left',
+                            fontSize: '12px',
+                            lineHeight: '17px',
+                            color: '#1659BD',
+                            fontWeight: isUser ? 400 : 500,
+                            wordBreak: 'break-word' as const,
+                          }}
+                        >
+                          <span style={{ fontSize: '10px', fontWeight: 600, opacity: 0.6, display: 'block', marginBottom: '2px' }}>
+                            {isUser ? 'You' : 'Eva'}
+                          </span>
+                          {text}
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+
             {/* Show PaymentSummaryResponsive components if available */}
             {showPaymentSummary && paymentSummaryData && paymentSummaryData.length > 0 && (
               <div className="w-full mb-4 space-y-4">
