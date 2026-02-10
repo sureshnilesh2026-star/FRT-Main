@@ -179,7 +179,7 @@ export default function ConversationPage() {
     if (conversation.status === 'connected') return
     
     // If there's an existing session, clean it up first
-    if (conversation.status !== 'idle' && conversation.status !== 'disconnected') {
+    if (conversation.status !== 'disconnected') {
       try {
         await conversation.endSession()
         // Wait a bit for cleanup
