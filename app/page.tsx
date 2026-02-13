@@ -33,7 +33,7 @@ export default function LandingPage() {
           videoRef.current.srcObject = stream
         }
       } catch (err: any) {
-        void err
+        console.error("Camera error:", err)
         if (err.name === "NotAllowedError") {
           alert("Camera permission denied. Please allow camera access and reload.")
         } else if (err.name === "NotReadableError") {
@@ -53,16 +53,12 @@ export default function LandingPage() {
     }
   }, [])
 
-  const [captured, setCaptured] = useState(false)
-
   const capturePhoto = () => {
     const video = videoRef.current
     const canvas = canvasRef.current
     const frozenImg = frozenImgRef.current
 
     if (!video || !canvas || !frozenImg) return
-
-    setCaptured(true)
 
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
@@ -101,6 +97,8 @@ export default function LandingPage() {
     })
     .then(res => res.json())
     .then(data => {
+      console.log("Webhook response:", JSON.stringify(data, null, 2))
+
       const vars = data.conversation_initiation_data?.variables || {}
       const name = vars.name || "Unknown"
       const status = vars.status || "UNKNOWN"
@@ -140,7 +138,7 @@ export default function LandingPage() {
       }
     })
     .catch(err => {
-      void err
+      console.error("Webhook error:", err)
       setIsSending(false)
       setResultMessage({
         type: "error",
@@ -216,48 +214,46 @@ export default function LandingPage() {
           />
         </div>
 
-        {!captured && (
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            marginBottom: '12px'
-          }}>
-            <button
-              onClick={capturePhoto}
-              disabled={isSending || !!resultMessage}
-              style={{
-                width: '70px',
-                height: '70px',
-                borderRadius: '50%',
-                border: '4px solid #ccc',
-                background: 'white',
-                cursor: isSending || resultMessage ? 'not-allowed' : 'pointer',
-                padding: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'transform 0.1s',
-                opacity: isSending || resultMessage ? 0.5 : 1
-              }}
-              onMouseDown={(e) => {
-                if (!isSending && !resultMessage) {
-                  e.currentTarget.style.transform = 'scale(0.9)'
-                }
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = 'scale(1)'
-              }}
-            >
-              <div style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '50%',
-                background: (isSending || resultMessage) ? '#ccc' : '#007bff',
-                transition: 'background 0.2s'
-              }} />
-            </button>
-          </div>
-        )}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginBottom: '12px'
+        }}>
+          <button
+            onClick={capturePhoto}
+            disabled={isSending || !!resultMessage}
+            style={{
+              width: '70px',
+              height: '70px',
+              borderRadius: '50%',
+              border: '4px solid #ccc',
+              background: 'white',
+              cursor: isSending || resultMessage ? 'not-allowed' : 'pointer',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'transform 0.1s',
+              opacity: isSending || resultMessage ? 0.5 : 1
+            }}
+            onMouseDown={(e) => {
+              if (!isSending && !resultMessage) {
+                e.currentTarget.style.transform = 'scale(0.9)'
+              }
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+            }}
+          >
+            <div style={{
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              background: (isSending || resultMessage) ? '#ccc' : '#007bff',
+              transition: 'background 0.2s'
+            }} />
+          </button>
+        </div>
         
         {isSending && (
           <p style={{

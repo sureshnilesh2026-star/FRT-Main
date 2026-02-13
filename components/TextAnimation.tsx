@@ -250,20 +250,9 @@ export default function AiTalkingAnimation({ onStartListening, onStopListening, 
             </>
           )}
           
-          {/* EVA Avatar - shown when conversation is active */}
-          {!showChatInterface && welcomePhase === 'hidden' && aiState !== 'idle' && (
-            <div className="flex flex-col items-center justify-center" style={{ marginBottom: '10px' }}>
-              <img
-                src="/eva.gif"
-                alt="EVA"
-                style={{ width: 220, height: 220, objectFit: 'contain' }}
-              />
-            </div>
-          )}
-
           {/* Animated Eva's voice text - positioned based on phase */}
           {!showChatInterface && (
-            <div className={`flex flex-col items-center w-4/5 mx-auto text-center ${welcomePhase === 'hidden' && aiState !== 'idle' ? 'justify-center' : ''}`} style={welcomePhase === 'hidden' && aiState !== 'idle' ? { position: 'relative', width: '90%', padding: '10px 0' } : {}}>
+            <div className={`flex flex-col items-center w-4/5 mx-auto text-center ${welcomePhase === 'hidden' && aiState !== 'idle' ? 'justify-center' : ''}`} style={welcomePhase === 'hidden' && aiState !== 'idle' ? { position: 'relative', width: '90%', top: '13%', padding: '20px 0' } : {}}>
             {/* Show PaymentSummaryResponsive components if available */}
             {showPaymentSummary && paymentSummaryData && paymentSummaryData.length > 0 && (
               <div className="w-full mb-4 space-y-4">
