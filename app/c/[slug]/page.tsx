@@ -33,33 +33,6 @@ export default function ConversationPage() {
     console.log('📦 FRT Variables:', { name, status, confidence })
   }, [searchParams])
 
-  // Log URL parameter on mount and set URL state
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const fullUrl = window.location.href
-      const origin = window.location.origin
-      const referrer = document.referrer
-      
-      setCurrentUrl(fullUrl)
-      setRedirectFrom(referrer || origin + '/')
-      
-      console.log('🚀 ConversationPage mounted')
-      console.log('📌 URL Parameter (slug):', slug)
-      console.log('🔗 Full URL:', fullUrl)
-      console.log('🔀 Redirected from:', origin + '/')
-      console.log('📍 Current Route:', `/c/${slug}`)
-      console.log('🔙 Referrer:', referrer || 'Direct access (no referrer)')
-      
-      if (referrer && referrer.includes(origin)) {
-        console.log('✅ Redirected from same origin')
-      }
-      
-      // Auto-hide URL info after 5 seconds
-      setTimeout(() => {
-        setShowUrlInfo(false)
-      }, 5000)
-    }
-  }, [slug])
   
   const [currentText, setCurrentText] = useState('')
   const [messages, setMessages] = useState<any[]>([])
@@ -70,11 +43,7 @@ export default function ConversationPage() {
   const [paymentSummaryData, setPaymentSummaryData] = useState<any[]>([])
   const [showChatInterface, setShowChatInterface] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [showDebugPanel, setShowDebugPanel] = useState(false)
   const [fetchedConversationData, setFetchedConversationData] = useState<any[]>([])
-  const [currentUrl, setCurrentUrl] = useState<string>('')
-  const [redirectFrom, setRedirectFrom] = useState<string>('')
-  const [showUrlInfo, setShowUrlInfo] = useState(true)
   
   // Use ref to track if component is mounted (for cleanup)
   const isMountedRef = useRef(true)
@@ -328,38 +297,14 @@ export default function ConversationPage() {
       // Start session with signed URL and FRT variables
       const sessionId = await conversation.startSession({ 
         signedUrl: data.apiKey,
-        connectionType: 'websocket',
-        overrides: {
-          agent: {
-            prompt: {
-              prompt: ""
-            }
-          },
-          conversation: {
-            variables: {
-              name: elName,
-              status: elStatus,
-              confidence: elConfidence
-            }
-          }
+        dynamicVariables: {
+          name: elName,
+          status: elStatus,
+          confidence: elConfidence
         }
       })
       
       console.log('Session started! ID:', sessionId)
-      
-      // Wait a bit for WebSocket to fully establish before marking as connected
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Verify connection is still active
-      if (conversation.status === 'connected' && isMountedRef.current) {
-        console.log('✅ WebSocket connection fully established')
-        setIsConnecting(false)
-      } else {
-        console.warn('⚠️ Connection status after start:', conversation.status)
-        if (isMountedRef.current) {
-          setIsConnecting(false)
-        }
-      }
       
     } catch (error: any) {
       console.error('Connection error:', error)
@@ -638,251 +583,6 @@ export default function ConversationPage() {
 
   return (
     <>
-      {/* URL Info Banner - Shows on load */}
-      {showUrlInfo && currentUrl && (
-        <div className="fixed top-4 left-4 right-4 z-50 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-2xl border-2 border-blue-400 animate-slide-down max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-2xl">⚡</span>
-                <h3 className="font-bold text-lg">Page Load Execution Order</h3>
-              </div>
-              
-              {/* Execution Order */}
-              <div className="bg-blue-800 bg-opacity-50 p-3 rounded mb-3">
-                <p className="font-semibold mb-2">On Page Load:</p>
-                <ol className="space-y-1 text-xs list-decimal list-inside">
-                  <li><strong>loadConversation()</strong> - Fetches from database</li>
-                  <li><strong>ElevenLabs hook</strong> - Initialized (not connected)</li>
-                  <li><strong>Waiting</strong> - No n8n webhook called yet</li>
-                </ol>
-                <p className="font-semibold mt-3 mb-2">When User Clicks START:</p>
-                <ol className="space-y-1 text-xs list-decimal list-inside">
-                  <li><strong className="text-yellow-300">n8n webhook</strong> called FIRST</li>
-                  <li><strong className="text-yellow-300">ElevenLabs</strong> connects SECOND</li>
-                </ol>
-              </div>
-
-              {/* URL Information */}
-              <div className="space-y-2 text-sm">
-                <div>
-                  <span className="font-semibold">Redirected From:</span>
-                  <code className="ml-2 bg-blue-800 px-2 py-1 rounded text-xs break-all">
-                    {redirectFrom}
-                  </code>
-                </div>
-                <div>
-                  <span className="font-semibold">Current URL:</span>
-                  <code className="ml-2 bg-blue-800 px-2 py-1 rounded text-xs break-all">
-                    {currentUrl}
-                  </code>
-                </div>
-                <div>
-                  <span className="font-semibold">Conversation ID:</span>
-                  <code className="ml-2 bg-blue-800 px-2 py-1 rounded text-xs">
-                    {slug}
-                  </code>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowUrlInfo(false)}
-              className="ml-4 text-white hover:text-gray-200 text-xl font-bold"
-              aria-label="Close"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Debug Panel */}
-      <div className="fixed top-4 right-4 z-50">
-        <button
-          onClick={() => setShowDebugPanel(!showDebugPanel)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700 text-sm font-semibold"
-        >
-          {showDebugPanel ? 'Hide' : 'Show'} Debug Info
-        </button>
-      </div>
-      
-      {showDebugPanel && (
-        <div className="fixed top-16 right-4 z-50 bg-white border-2 border-blue-600 rounded-lg shadow-2xl p-6 max-w-2xl max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-blue-600">Debug Information</h2>
-            <button
-              onClick={() => setShowDebugPanel(false)}
-              className="text-gray-500 hover:text-gray-700 text-xl font-bold"
-            >
-              ×
-            </button>
-          </div>
-          
-          <div className="space-y-4 text-sm">
-            {/* Execution Order */}
-            <div className="border-b pb-3">
-              <h3 className="font-bold text-gray-700 mb-2">⚡ Execution Order on Page Load:</h3>
-              <div className="bg-gray-50 p-3 rounded space-y-2">
-                <div className="flex items-start gap-2">
-                  <span className="font-bold text-green-600">1.</span>
-                  <div>
-                    <p className="font-semibold">loadConversation() runs</p>
-                    <p className="text-xs text-gray-600">Fetches conversation history from database</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-bold text-blue-600">2.</span>
-                  <div>
-                    <p className="font-semibold">ElevenLabs hook initialized</p>
-                    <p className="text-xs text-gray-600">useConversation hook ready (but NOT connected)</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-bold text-gray-600">3.</span>
-                  <div>
-                    <p className="font-semibold">Waiting for user action</p>
-                    <p className="text-xs text-gray-600">No n8n webhook called yet</p>
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t">
-                  <p className="font-semibold text-purple-600 mb-2">When user clicks START:</p>
-                  <div className="space-y-1 text-xs">
-                    <p><strong className="text-purple-600">→ n8n webhook</strong> called FIRST (conversation_started)</p>
-                    <p><strong className="text-purple-600">→ ElevenLabs</strong> connects SECOND</p>
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t">
-                  <p className="font-semibold text-orange-600 mb-2">When AI responds:</p>
-                  <div className="space-y-1 text-xs">
-                    <p><strong className="text-orange-600">→ ElevenLabs</strong> receives message FIRST</p>
-                    <p><strong className="text-orange-600">→ n8n webhook</strong> processes response SECOND</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Redirection Information */}
-            <div className="border-b pb-3">
-              <h3 className="font-bold text-gray-700 mb-2">🔀 Redirection Information:</h3>
-              <div className="bg-gray-50 p-3 rounded space-y-2">
-                <p><strong>Redirected From:</strong></p>
-                <code className="bg-gray-200 px-2 py-1 rounded block text-xs break-all">
-                  {typeof window !== 'undefined' ? window.location.origin + '/' : 'N/A'}
-                </code>
-                <p className="text-xs text-gray-500 mt-2">Root route (<code>/</code>) redirects to:</p>
-                <code className="bg-blue-100 px-2 py-1 rounded block text-xs break-all">
-                  /c/{'{'}performance.now()}_{'{'}Math.random()}
-                </code>
-                <p className="text-xs text-gray-500 mt-2">Redirect Logic:</p>
-                <code className="bg-gray-200 px-2 py-1 rounded block text-xs">
-                  NextResponse.redirect(new URL(`/c/${'{'}performance.now()}_{'{'}Math.random()}`, request.url))
-                </code>
-                <p className="text-xs text-gray-500 mt-2"><strong>Current Redirected URL:</strong></p>
-                <code className="bg-green-100 px-2 py-1 rounded block text-xs break-all">
-                  {typeof window !== 'undefined' ? window.location.href : 'N/A'}
-                </code>
-                {typeof window !== 'undefined' && document.referrer && (
-                  <>
-                    <p className="text-xs text-gray-500 mt-2"><strong>Referrer:</strong></p>
-                    <code className="bg-gray-200 px-2 py-1 rounded block text-xs break-all">
-                      {document.referrer}
-                    </code>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* URL Parameters */}
-            <div className="border-b pb-3">
-              <h3 className="font-bold text-gray-700 mb-2">📌 URL Parameters (from redirect):</h3>
-              <div className="bg-gray-50 p-3 rounded">
-                <p><strong>slug:</strong> <code className="bg-gray-200 px-2 py-1 rounded">{slug}</code></p>
-                <p className="text-xs text-gray-500 mt-1">Route: <code>/c/[slug]</code></p>
-                <p className="text-xs text-gray-500 mt-2">
-                  This slug is generated from: <code>performance.now()</code> + <code>Math.random()</code>
-                </p>
-              </div>
-            </div>
-
-            {/* Fetched Data from API */}
-            <div className="border-b pb-3">
-              <h3 className="font-bold text-gray-700 mb-2">📥 Fetched Conversation Data:</h3>
-              <div className="bg-gray-50 p-3 rounded">
-                <p><strong>API Endpoint:</strong> <code className="bg-gray-200 px-2 py-1 rounded">/api/c?id={slug}</code></p>
-                <p><strong>Records Found:</strong> <span className="font-semibold">{fetchedConversationData.length}</span></p>
-                {fetchedConversationData.length > 0 && (
-                  <details className="mt-2">
-                    <summary className="cursor-pointer text-blue-600 hover:text-blue-800">View Raw Data</summary>
-                    <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-60 overflow-y-auto">
-                      {JSON.stringify(fetchedConversationData, null, 2)}
-                    </pre>
-                  </details>
-                )}
-              </div>
-            </div>
-
-            {/* Current State Variables */}
-            <div className="border-b pb-3">
-              <h3 className="font-bold text-gray-700 mb-2">🔧 Current State Variables:</h3>
-              <div className="bg-gray-50 p-3 rounded space-y-2">
-                <p><strong>messages.length:</strong> <code className="bg-gray-200 px-2 py-1 rounded">{messages.length}</code></p>
-                <p><strong>itemIdCounter:</strong> <code className="bg-gray-200 px-2 py-1 rounded">{itemIdCounter}</code></p>
-                <p><strong>isConnecting:</strong> <code className="bg-gray-200 px-2 py-1 rounded">{isConnecting ? 'true' : 'false'}</code></p>
-                <p><strong>conversation.status:</strong> <code className="bg-gray-200 px-2 py-1 rounded">{conversation.status}</code></p>
-                <p><strong>showPaymentSummary:</strong> <code className="bg-gray-200 px-2 py-1 rounded">{showPaymentSummary ? 'true' : 'false'}</code></p>
-                <p><strong>showChatInterface:</strong> <code className="bg-gray-200 px-2 py-1 rounded">{showChatInterface ? 'true' : 'false'}</code></p>
-                <p><strong>paymentSummaryData.length:</strong> <code className="bg-gray-200 px-2 py-1 rounded">{paymentSummaryData.length}</code></p>
-                {errorMessage && (
-                  <p><strong>errorMessage:</strong> <code className="bg-red-100 px-2 py-1 rounded text-red-700">{errorMessage}</code></p>
-                )}
-              </div>
-            </div>
-
-            {/* Payment Summary Data */}
-            {paymentSummaryData.length > 0 && (
-              <div className="border-b pb-3">
-                <h3 className="font-bold text-gray-700 mb-2">💰 Payment Summary Data:</h3>
-                <div className="bg-gray-50 p-3 rounded">
-                  <details>
-                    <summary className="cursor-pointer text-blue-600 hover:text-blue-800">View Payment Data</summary>
-                    <pre className="mt-2 text-xs bg-gray-100 p-2 rounded overflow-x-auto max-h-60 overflow-y-auto">
-                      {JSON.stringify(paymentSummaryData, null, 2)}
-                    </pre>
-                  </details>
-                </div>
-              </div>
-            )}
-
-            {/* Messages Preview */}
-            {messages.length > 0 && (
-              <div className="border-b pb-3">
-                <h3 className="font-bold text-gray-700 mb-2">💬 Messages ({messages.length}):</h3>
-                <div className="bg-gray-50 p-3 rounded max-h-40 overflow-y-auto">
-                  {messages.slice(-5).map((msg, idx) => (
-                    <div key={idx} className="mb-2 text-xs border-l-2 pl-2 border-blue-300">
-                      <p><strong>{msg.source}:</strong> {msg.content_transcript?.substring(0, 50)}...</p>
-                    </div>
-                  ))}
-                  {messages.length > 5 && (
-                    <p className="text-xs text-gray-500 mt-2">... and {messages.length - 5} more</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Current Text */}
-            {currentText && (
-              <div className="border-b pb-3">
-                <h3 className="font-bold text-gray-700 mb-2">📝 Current Text:</h3>
-                <div className="bg-gray-50 p-3 rounded">
-                  <p className="text-xs break-words">{currentText}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       <TextAnimation 
         currentText={currentText} 
         isAudioPlaying={conversation.isSpeaking} 

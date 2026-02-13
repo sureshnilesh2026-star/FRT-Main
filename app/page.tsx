@@ -214,46 +214,44 @@ export default function LandingPage() {
           />
         </div>
 
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          marginBottom: '12px'
-        }}>
-          <button
-            onClick={capturePhoto}
-            disabled={isSending || !!resultMessage}
-            style={{
-              width: '70px',
-              height: '70px',
-              borderRadius: '50%',
-              border: '4px solid #ccc',
-              background: 'white',
-              cursor: isSending || resultMessage ? 'not-allowed' : 'pointer',
-              padding: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'transform 0.1s',
-              opacity: isSending || resultMessage ? 0.5 : 1
-            }}
-            onMouseDown={(e) => {
-              if (!isSending && !resultMessage) {
+        {!isSending && !resultMessage && (
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: '12px'
+          }}>
+            <button
+              onClick={capturePhoto}
+              style={{
+                width: '70px',
+                height: '70px',
+                borderRadius: '50%',
+                border: '4px solid #ccc',
+                background: 'white',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'transform 0.1s',
+              }}
+              onMouseDown={(e) => {
                 e.currentTarget.style.transform = 'scale(0.9)'
-              }
-            }}
-            onMouseUp={(e) => {
-              e.currentTarget.style.transform = 'scale(1)'
-            }}
-          >
-            <div style={{
-              width: '54px',
-              height: '54px',
-              borderRadius: '50%',
-              background: (isSending || resultMessage) ? '#ccc' : '#007bff',
-              transition: 'background 0.2s'
-            }} />
-          </button>
-        </div>
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.transform = 'scale(1)'
+              }}
+            >
+              <div style={{
+                width: '54px',
+                height: '54px',
+                borderRadius: '50%',
+                background: '#007bff',
+                transition: 'background 0.2s'
+              }} />
+            </button>
+          </div>
+        )}
         
         {isSending && (
           <p style={{
